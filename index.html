@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agropecuaria El Faisán · Panel de producción</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{
+    --bg: #180F10;
+    --bg-panel: #241618;
+    --line: #3E262A;
+    --text: #F2E6E1;
+    --text-dim: #A98D8A;
+    --grain: #D9A441;   /* peso / producción */
+    --grain-dim: #5A4224;
+    --soy: #7FB88A;     /* ganancia positiva */
+    --soy-dim: #2E4A34;
+    --freight: #C97A6B;  /* costos */
+    --freight-dim: #4A2E2A;
+    --costos: #E2384F;  /* mortalidad / alertas / negativo — rojo de marca */
+    --costos-dim: #4A1B22;
+    --radius: 6px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'JetBrains Mono', monospace;
+    font-size:14px;
+    line-height:1.6;
+    padding:0 0 80px;
+  }
+  h1,h2,h3{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  header{
+    padding:48px 32px 32px;
+    border-bottom:1px solid var(--line);
+    max-width:1080px;
+    margin:0 auto;
+  }
+  header .eyebrow{
+    color:var(--text-dim);
+    text-transform:uppercase;
+    letter-spacing:0.12em;
+    font-size:11px;
+    margin-bottom:10px;
+  }
+  header h1{font-size:32px;}
+  header p{color:var(--text-dim); margin-top:10px; font-size:13px;}
+  main{max-width:1080px; margin:0 auto; padding:0 32px;}
+  section{margin-top:0;}
+  section:first-of-type{margin-top:40px;}
+  section > h2{
+    font-size:20px;
+    margin-bottom:4px;
+  }
+  .sub{color:var(--text-dim); font-size:12px; margin-bottom:20px;}
+  .footnote{
+    color:var(--text-dim);
+    font-size:11px;
+    line-height:1.6;
+    margin:20px 0 0;
+    font-style:italic;
+  }
+  .group-label{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    padding:4px 10px;
+    border-radius:999px;
+    margin-bottom:16px;
+  }
+  .group-label.grain{color:var(--grain); background:var(--grain-dim);}
+  .group-label.soy{color:var(--soy); background:var(--soy-dim);}
+  .group-label.freight{color:var(--freight); background:var(--freight-dim);}
+  .group-label.costos{color:var(--costos); background:var(--costos-dim);}
+  .chart-panel{
+    background:var(--bg-panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:24px;
+  }
+  .chart-panel canvas{max-height:280px;}
+  .chart-filters{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:16px;
+  }
+  .filter-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    padding:6px 12px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--text-dim);
+    cursor:pointer;
+  }
+  .filter-chip:hover{border-color:var(--text-dim); color:var(--text);}
+  .filter-chip.active{background:var(--bg); color:var(--text); border-color:var(--text-dim);}
+  .filter-chip .chip-dot{
+    width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0;
+  }
+  .empty-state{
+    color:var(--text-dim);
+    font-size:13px;
+    padding:32px 0;
+    text-align:center;
+    border:1px dashed var(--line);
+    border-radius:var(--radius);
+  }
+
+  .fob-subsection-label{
+    color:var(--text-dim);
+    font-size:12px;
+    margin-bottom:12px;
+  }
+  /* KPI cards — same visual language as Agrotrader's fob-card */
+  .kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:14px;
+    margin-bottom:28px;
+  }
+  .fob-card{
+    background:var(--bg-panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .fob-card .fob-card-header{
+    padding:12px 16px;
+    border-bottom:1px solid var(--line);
+    background:rgba(0,0,0,0.15);
+  }
+  .fob-card .fob-card-header .l1{
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--card-color, var(--grain));
+  }
+  .fob-card .fob-card-header .l2{
+    font-family:'Fraunces', serif;
+    font-size:15px;
+    color:var(--text);
+    margin-top:2px;
+  }
+  .fob-card .fob-card-body{
+    padding:16px;
+    text-align:center;
+  }
+  .fob-card .fob-card-body .value{
+    font-family:'Fraunces', serif;
+    font-size:26px;
+    font-weight:500;
+    color:var(--text);
+    line-height:1;
+  }
+  .fob-card .fob-card-body .value.placeholder{color:var(--text-dim);}
+  .fob-card .fob-card-body .unit{
+    font-size:10.5px;
+    color:var(--text-dim);
+    margin-top:6px;
+  }
+  @media (max-width:640px){
+    .kpi-grid{grid-template-columns:repeat(2, 1fr);}
+  }
+
+  /* Núcleo overview — column-stacked squares, same pattern as Mercado Exterior's stack-grid */
+  .stack-grid{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:14px;
+    margin-bottom:24px;
+  }
+  .nucleo-card{
+    background:var(--bg-panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px;
+    text-align:center;
+  }
+  .nucleo-card .n-label{
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--text-dim);
+  }
+  .nucleo-card .n-title{
+    font-family:'Fraunces', serif;
+    font-size:16px;
+    margin:4px 0 12px;
+  }
+  .nucleo-card .n-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:11.5px;
+    padding:5px 0;
+    border-top:1px solid var(--line);
+  }
+  .nucleo-card .n-row:first-of-type{border-top:none;}
+  .nucleo-card .n-row .n-key{color:var(--text-dim);}
+  .nucleo-card .n-row .n-val{color:var(--text); font-weight:600;}
+  @media (max-width:900px){
+    .stack-grid{grid-template-columns:repeat(2, 1fr);}
+  }
+
+  /* Lotes cerrados — reuses the fob-section-grid pattern */
+  .fob-section-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:14px;
+  }
+  .lote-card .fob-card-body.split{
+    display:flex;
+    padding:0;
+    text-align:center;
+  }
+  .lote-card .fob-card-body.split .split-half{
+    flex:1;
+    padding:12px 8px;
+  }
+  .lote-card .fob-card-body.split .split-half:first-child{border-right:1px solid var(--line);}
+  .lote-card .split-label{
+    font-size:9.5px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--text-dim);
+    margin-bottom:6px;
+  }
+  .lote-card .split-value{
+    font-family:'Fraunces', serif;
+    font-size:18px;
+    color:var(--text);
+  }
+  .lote-card .split-value.positive{color:var(--soy);}
+  .lote-card .split-value.negative{color:var(--costos);}
+  @media (max-width:640px){
+    .fob-section-grid{grid-template-columns:repeat(2, 1fr);}
+  }
+
+  .section-divider{
+    margin:48px 0;
+    height:1px;
+    background:linear-gradient(90deg,
+      transparent 0%, var(--line) 12%, var(--line) 88%, transparent 100%);
+    position:relative;
+  }
+  .section-divider::before{
+    content:'';
+    position:absolute;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    width:9px; height:9px;
+    border-radius:50%;
+    background:var(--divider-color, var(--grain));
+    box-shadow:0 0 0 5px var(--bg), 0 0 14px 1px var(--divider-color, var(--grain));
+  }
+  .section-divider.divider-grain{ --divider-color: var(--grain); }
+  .section-divider.divider-soy{ --divider-color: var(--soy); }
+  .section-divider.divider-freight{ --divider-color: var(--freight); }
+  .section-divider.divider-costos{ --divider-color: var(--costos); }
+
+  #manual-entry{padding-top:8px;}
+  .entry-card{
+    background:var(--bg-panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:24px 28px;
+  }
+  .entry-card .entry-title{
+    font-family:'Fraunces', serif;
+    font-size:16px;
+    margin-bottom:6px;
+  }
+  .entry-card .entry-sub{color:var(--text-dim); font-size:12.5px;}
+
+  @media (max-width:640px){
+    header{padding:32px 20px 24px;}
+    main{padding:0 20px;}
+    header h1{font-size:26px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Reporte de producción · actualizado periódicamente</div>
+  <h1>Agropecuaria El Faisán</h1>
+  <p>Producción de pollo vivo · costos, peso y mortalidad por lote · 5 núcleos, 20 galpones</p>
+</header>
+
+<main>
+
+  <section id="kpi-section">
+    <span class="group-label grain">Resumen general</span>
+    <h2 class="sub" style="margin-bottom:16px; font-size:12px;">Lotes activos hoy y resultado de los últimos lotes cerrados</h2>
+    <div id="kpiGrid" class="kpi-grid"></div>
+  </section>
+
+  <div class="section-divider divider-grain"></div>
+
+  <section id="nucleos-section">
+    <span class="group-label grain">Núcleos</span>
+    <h2>Estado por núcleo</h2>
+    <div class="sub">Galpones activos, lotes en curso y pollos vivos por núcleo</div>
+    <div id="nucleoGrid" class="stack-grid"></div>
+    <div id="nucleosEmpty" class="empty-state" style="display:none;">Aún no hay datos sincronizados. Se toman de la hoja "Nuevo Lote" en la planilla.</div>
+  </section>
+
+  <div class="section-divider divider-soy"></div>
+
+  <section id="peso-section">
+    <span class="group-label grain">Lotes activos</span>
+    <h2>Evolución de peso</h2>
+    <div class="sub">Peso promedio diario por lote — kg/pollo. La banda sombreada es el rango esperado (editable en la hoja "Rangos esperados" del Excel).</div>
+    <div class="chart-panel">
+      <div id="pesoFilters" class="chart-filters"></div>
+      <canvas id="pesoChart" style="display:none;"></canvas>
+      <div id="pesoEmpty" class="empty-state">Aún no hay lotes activos con controles diarios cargados.</div>
+    </div>
+  </section>
+
+  <section id="mortalidad-section">
+    <span class="group-label costos">Lotes activos</span>
+    <h2>Mortalidad acumulada</h2>
+    <div class="sub">Porcentaje acumulado de mortalidad por lote, día a día. La banda sombreada es el rango esperado (editable en la hoja "Rangos esperados" del Excel).</div>
+    <div class="chart-panel">
+      <div id="mortFilters" class="chart-filters"></div>
+      <canvas id="mortChart" style="display:none;"></canvas>
+      <div id="mortEmpty" class="empty-state">Aún no hay lotes activos con controles diarios cargados.</div>
+    </div>
+  </section>
+
+  <div class="section-divider divider-freight"></div>
+
+  <section id="historico-section">
+    <span class="group-label freight">Lotes cerrados</span>
+    <h2>Histórico de lotes vendidos</h2>
+    <div class="sub">Últimos lotes vendidos, ordenados por fecha de venta</div>
+
+    <div class="fob-subsection-label">Costo por pollo y precio de venta</div>
+    <div class="sub" style="margin-bottom:12px;">Verde: el lote cerró en ganancia · Rojo: el lote cerró en pérdida</div>
+    <div class="chart-panel">
+      <canvas id="costoChart" style="display:none;"></canvas>
+      <div id="costoEmpty" class="empty-state">Aún no hay lotes cerrados.</div>
+    </div>
+
+    <div class="fob-subsection-label">Ganancia</div>
+    <div class="chart-panel">
+      <canvas id="gananciaChart" style="display:none;"></canvas>
+      <div id="gananciaEmpty" class="empty-state">Aún no hay lotes cerrados.</div>
+    </div>
+
+    <div class="fob-subsection-label" style="color:var(--text-dim); font-size:12px; margin:20px 0 12px;">Últimos lotes vendidos</div>
+    <div id="loteCardsGrid" class="fob-section-grid"></div>
+    <div id="loteCardsEmpty" class="empty-state">Aún no hay lotes cerrados. Se toman de "Resumen por Lote" en la planilla.</div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <section id="manual-entry">
+    <h2>Carga de datos</h2>
+    <div class="sub">Los datos se registran en la planilla de lotes y se sincronizan al panel automáticamente.</div>
+    <div class="entry-card">
+      <div class="entry-title">Planilla de lotes — Google Sheets</div>
+      <div class="entry-sub">"Nuevo Lote" para dar de alta un lote · "Control Diario" para el peso y la mortalidad de cada día. El panel toma "Resumen por Lote" publicada como CSV.</div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+// =======================================================================
+// Real data — fetched from processed/history.json, written by
+// data/sync_el_faisan.py. Every section shows its own empty state until
+// that file has something for it.
+// =======================================================================
+
+async function loadHistory(){
+  try {
+    const res = await fetch('processed/history.json', {cache:'no-store'});
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+function toggleEmpty(emptyId, canvasId, hasData){
+  const empty = document.getElementById(emptyId);
+  if (empty) empty.style.display = hasData ? 'none' : 'block';
+  if (canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (canvas) canvas.style.display = hasData ? 'block' : 'none';
+  }
+}
+
+function buildFobCard(l1, l2, value, unit, color){
+  const card = document.createElement('div');
+  card.className = 'fob-card';
+  card.style.setProperty('--card-color', color);
+  card.innerHTML = `
+    <div class="fob-card-header">
+      <div class="l1">${l1}</div>
+      <div class="l2">${l2}</div>
+    </div>
+    <div class="fob-card-body">
+      <div class="value${value === '—' ? ' placeholder' : ''}">${value}</div>
+      <div class="unit">${unit}</div>
+    </div>
+  `;
+  return card;
+}
+
+function renderFilterChips(containerId, chartGetter, datasets){
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  if (!datasets || datasets.length < 2) return;
+
+  function setActive(btn){
+    container.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  const allBtn = document.createElement('button');
+  allBtn.type = 'button';
+  allBtn.className = 'filter-chip active';
+  allBtn.textContent = 'Todos';
+  allBtn.addEventListener('click', () => {
+    const chart = chartGetter();
+    datasets.forEach(ds => ds.hidden = false);
+    chart.update();
+    setActive(allBtn);
+  });
+  container.appendChild(allBtn);
+
+  datasets.forEach((ds) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'filter-chip';
+    btn.innerHTML = `<span class="chip-dot" style="background:${ds.chipColor || ds.borderColor}"></span>${ds.label}`;
+    btn.addEventListener('click', () => {
+      const chart = chartGetter();
+      datasets.forEach(d => { d.hidden = d !== ds; });
+      chart.update();
+      setActive(btn);
+    });
+    container.appendChild(btn);
+  });
+}
+
+function baseOptions(yTickFormat){
+  return {
+    responsive: true,
+    animation: false,
+    scales: {
+      x: { ticks: { color: '#A98D8A', font: {family:'JetBrains Mono', size: 11}, maxTicksLimit: 12, autoSkip: true }, grid: { color: '#3E262A' } },
+      y: { ticks: { color: '#A98D8A', font: {family:'JetBrains Mono', size: 11}, callback: yTickFormat }, grid: { color: '#3E262A' } },
+    },
+    plugins: {
+      legend: {
+        labels: {
+          color: '#F2E6E1', font: {family:'JetBrains Mono', size: 11}, boxWidth: 12,
+          filter: (item, data) => !data.datasets[item.datasetIndex].isBand,
+        },
+      },
+    },
+  };
+}
+
+const LOTE_COLORS = ['#D9A441', '#7FB88A', '#C97A6B', '#B98CA3', '#E2A93A', '#6FA0A8'];
+
+// ---- KPI cards ------------------------------------------------------------
+function renderKPIs(data){
+  const kpiGrid = document.getElementById('kpiGrid');
+  kpiGrid.innerHTML = '';
+  const activos = data.lotes_activos || [];
+  const cerrados = data.lotes_cerrados || [];
+
+  const mortProm = cerrados.length ? cerrados.reduce((s,l)=>s+(l.mortalidad||0),0)/cerrados.length : null;
+  const costoProm = cerrados.length ? cerrados.reduce((s,l)=>s+(l.costo_pollo||0),0)/cerrados.length : null;
+  const gananciaTotal = cerrados.length ? cerrados.reduce((s,l)=>s+(l.ganancia||0),0) : null;
+
+  kpiGrid.appendChild(buildFobCard('Hoy', 'Lotes activos', activos.length || '—', activos.length ? 'en curso ahora' : 'sin lotes activos', 'var(--grain)'));
+  kpiGrid.appendChild(buildFobCard('Lotes cerrados', 'Mortalidad promedio', mortProm !== null ? (mortProm*100).toFixed(1)+'%' : '—', mortProm !== null ? 'sobre cantidad inicial' : 'sin lotes cerrados', 'var(--costos)'));
+  kpiGrid.appendChild(buildFobCard('Lotes cerrados', 'Costo por pollo', costoProm !== null ? 'Bs '+costoProm.toFixed(2) : '—', costoProm !== null ? 'promedio al cierre' : 'sin lotes cerrados', 'var(--freight)'));
+  kpiGrid.appendChild(buildFobCard('Lotes cerrados', 'Ganancia acumulada', gananciaTotal !== null ? 'Bs '+Math.round(gananciaTotal).toLocaleString('es-BO') : '—', gananciaTotal !== null ? 'suma de lotes cerrados' : 'sin lotes cerrados', 'var(--soy)'));
+}
+
+// ---- Núcleo cards -----------------------------------------------------
+function renderNucleos(data){
+  const nucleoGrid = document.getElementById('nucleoGrid');
+  nucleoGrid.innerHTML = '';
+  const nucleos = data.nucleos || [];
+  toggleEmpty('nucleosEmpty', null, nucleos.length > 0);
+  nucleoGrid.style.display = nucleos.length > 0 ? 'grid' : 'none';
+  nucleos.forEach(n => {
+    const card = document.createElement('div');
+    card.className = 'nucleo-card';
+    card.innerHTML = `
+      <div class="n-label">${n.galpones} galpones</div>
+      <div class="n-title">${n.label}</div>
+      <div class="n-row"><span class="n-key">Lotes activos</span><span class="n-val">${n.lotes_activos}</span></div>
+      <div class="n-row"><span class="n-key">Galpones libres</span><span class="n-val">${n.galpones - n.galpones_activos}</span></div>
+      <div class="n-row"><span class="n-key">Pollos vivos</span><span class="n-val">${(n.pollos_vivos || 0).toLocaleString('es-BO')}</span></div>
+    `;
+    nucleoGrid.appendChild(card);
+  });
+}
+
+// ---- Peso / Mortalidad charts (lotes activos) ------------------------
+function renderActivosCharts(data){
+  const activos = data.lotes_activos || [];
+  const rangos = data.rangos_esperados || [];
+  const hasData = activos.length > 0;
+  toggleEmpty('pesoEmpty', 'pesoChart', hasData);
+  toggleEmpty('mortEmpty', 'mortChart', hasData);
+  if (!hasData) {
+    document.getElementById('pesoFilters').innerHTML = '';
+    document.getElementById('mortFilters').innerHTML = '';
+    return;
+  }
+
+  const withColor = activos.map((l, i) => ({...l, color: LOTE_COLORS[i % LOTE_COLORS.length]}));
+  const maxDias = Math.max(...withColor.map(l => (l.dias || []).length), rangos.length);
+  const labels = Array.from({length:maxDias}, (_,i) => 'Día ' + i);
+  const rangoByDia = {};
+  rangos.forEach(r => { rangoByDia[r.dia] = r; });
+  const rangoSlice = Array.from({length:maxDias}, (_,i) => rangoByDia[i] || null);
+
+  // ---- peso ----
+  const pesoBandDatasets = rangos.length ? [
+    { label:'Rango esperado', data: rangoSlice.map(r => r ? r.peso_min : null),
+      borderWidth:0, pointRadius:0, fill:false, isBand:true, order:0, spanGaps:true },
+    { label:'Rango esperado', data: rangoSlice.map(r => r ? r.peso_max : null),
+      borderWidth:0, pointRadius:0, fill:'-1', backgroundColor:'rgba(217,164,65,0.14)',
+      isBand:true, order:0, spanGaps:true },
+  ] : [];
+  const pesoDatasets = withColor.map(l => {
+    const byDia = {};
+    (l.dias || []).forEach((dia, i) => { byDia[dia] = l.peso[i]; });
+    return {
+      label: l.lote, data: labels.map((_, i) => byDia[i] ?? null),
+      borderColor: l.color, backgroundColor: l.color,
+      borderWidth: 2, tension: 0.3, pointRadius: 2, spanGaps: true, order: 1,
+    };
+  });
+  const pesoChart = new Chart(document.getElementById('pesoChart'), {
+    type:'line',
+    data:{labels, datasets:[...pesoBandDatasets, ...pesoDatasets]},
+    options: baseOptions(v => v + ' kg'),
+  });
+  renderFilterChips('pesoFilters', () => pesoChart, pesoDatasets);
+
+  // ---- mortalidad ----
+  const mortBandDatasets = rangos.length ? [
+    { label:'Rango esperado', data: rangoSlice.map(r => r ? r.mort_min * 100 : null),
+      borderWidth:0, pointRadius:0, fill:false, isBand:true, order:0, spanGaps:true },
+    { label:'Rango esperado', data: rangoSlice.map(r => r ? r.mort_max * 100 : null),
+      borderWidth:0, pointRadius:0, fill:'-1', backgroundColor:'rgba(226,56,79,0.14)',
+      isBand:true, order:0, spanGaps:true },
+  ] : [];
+  const mortDatasets = withColor.map(l => {
+    const byDia = {};
+    (l.dias || []).forEach((dia, i) => { byDia[dia] = l.mortalidad[i]; });
+    return {
+      label: l.lote, data: labels.map((_, i) => byDia[i] ?? null),
+      borderColor: l.color, backgroundColor: l.color,
+      borderWidth: 2, tension: 0.3, pointRadius: 2, spanGaps: true, order: 1,
+    };
+  });
+  const mortChart = new Chart(document.getElementById('mortChart'), {
+    type:'line',
+    data:{labels, datasets:[...mortBandDatasets, ...mortDatasets]},
+    options: baseOptions(v => v + '%'),
+  });
+  renderFilterChips('mortFilters', () => mortChart, mortDatasets);
+}
+
+// ---- Costo / Ganancia charts + lote cards (lotes cerrados) -----------
+function renderCerradosCharts(data){
+  const cerrados = data.lotes_cerrados || [];
+  const hasData = cerrados.length > 0;
+  toggleEmpty('costoEmpty', 'costoChart', hasData);
+  toggleEmpty('gananciaEmpty', 'gananciaChart', hasData);
+  toggleEmpty('loteCardsEmpty', null, hasData);
+  document.getElementById('loteCardsGrid').innerHTML = '';
+  if (!hasData) return;
+
+  const labels = cerrados.map(l => l.lote);
+  const costoValues = cerrados.map(l => l.costo_pollo);
+  const ventaValues = cerrados.map(l => l.precio_venta);
+  const gananciaValues = cerrados.map(l => l.ganancia);
+
+  new Chart(document.getElementById('costoChart'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'Costo por pollo (Bs)', data: costoValues,
+          backgroundColor: ctx => cerrados[ctx.dataIndex].ganancia < 0 ? '#8C222F' : '#3E6B49',
+          borderWidth:0, borderRadius:3, borderSkipped:false,
+        },
+        {
+          label:'Precio de venta (Bs/kg)', data: ventaValues,
+          backgroundColor: ctx => cerrados[ctx.dataIndex].ganancia < 0 ? '#E2384F' : '#7FB88A',
+          borderWidth:0, borderRadius:3, borderSkipped:false,
+        },
+      ],
+    },
+    options: {
+      responsive:true, animation:false,
+      categoryPercentage:0.6, barPercentage:0.85,
+      scales:{
+        x:{
+          ticks:{
+            color: ctx => cerrados[ctx.index].ganancia < 0 ? '#E2384F' : '#A98D8A',
+            font:{family:'JetBrains Mono', size:11},
+          },
+          grid:{color:'#3E262A'},
+        },
+        y:{ beginAtZero:true, ticks:{color:'#A98D8A', font:{family:'JetBrains Mono', size:11}, callback:v=>'Bs '+v}, grid:{color:'#3E262A'} },
+      },
+      plugins:{ legend:{ labels:{ color:'#F2E6E1', font:{family:'JetBrains Mono', size:11}, boxWidth:12 } } },
+    },
+  });
+
+  const gananciaAbsMax = Math.max(...gananciaValues.map(v => Math.abs(v)), 1);
+  const gananciaAxisPad = gananciaAbsMax * 0.15;
+
+  new Chart(document.getElementById('gananciaChart'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        label:'Ganancia (Bs)', data: gananciaValues,
+        backgroundColor: ctx => ctx.raw < 0 ? '#E2384F' : '#7FB88A',
+        borderWidth:0, borderRadius:3, borderSkipped:false,
+      }],
+    },
+    options: {
+      responsive:true, animation:false,
+      categoryPercentage:0.6, barPercentage:0.85,
+      scales:{
+        x:{
+          ticks:{
+            color: ctx => gananciaValues[ctx.index] < 0 ? '#E2384F' : '#A98D8A',
+            font:{family:'JetBrains Mono', size:11},
+          },
+          grid:{color:'#3E262A'},
+        },
+        y:{
+          suggestedMin: -gananciaAbsMax - gananciaAxisPad,
+          suggestedMax: gananciaAbsMax + gananciaAxisPad,
+          ticks:{
+            color: ctx => ctx.tick.value === 0 ? '#F2E6E1' : '#A98D8A',
+            font:{family:'JetBrains Mono', size:11},
+            callback:v=>'Bs '+v,
+          },
+          grid:{
+            color: ctx => ctx.tick.value === 0 ? '#A98D8A' : 'rgba(62,38,42,0.6)',
+            lineWidth: ctx => ctx.tick.value === 0 ? 1.5 : 1,
+          },
+        },
+      },
+      plugins:{ legend:{ display:false } },
+    },
+  });
+
+  const loteCardsGrid = document.getElementById('loteCardsGrid');
+  cerrados.slice(-6).reverse().forEach(l => {
+    const card = document.createElement('div');
+    card.className = 'fob-card lote-card';
+    card.innerHTML = `
+      <div class="fob-card-header">
+        <div class="l1">${l.nucleo} · ${l.galpon}</div>
+        <div class="l2">${l.lote}</div>
+      </div>
+      <div class="fob-card-body split">
+        <div class="split-half">
+          <div class="split-label">Costo/pollo</div>
+          <div class="split-value">Bs ${(l.costo_pollo ?? 0).toFixed(2)}</div>
+        </div>
+        <div class="split-half">
+          <div class="split-label">Ganancia</div>
+          <div class="split-value ${l.ganancia >= 0 ? 'positive' : 'negative'}">Bs ${Math.round(l.ganancia).toLocaleString('es-BO')}</div>
+        </div>
+      </div>
+    `;
+    loteCardsGrid.appendChild(card);
+  });
+}
+
+// ---- init ---------------------------------------------------------------
+async function init(){
+  const data = await loadHistory();
+  const safeData = data || {nucleos: [], lotes_activos: [], lotes_cerrados: [], rangos_esperados: []};
+  renderKPIs(safeData);
+  renderNucleos(safeData);
+  renderActivosCharts(safeData);
+  renderCerradosCharts(safeData);
+}
+init();
+</script>
+
+</body>
+</html>

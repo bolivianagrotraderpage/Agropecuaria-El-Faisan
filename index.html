@@ -55,6 +55,34 @@
   }
   header h1{font-size:32px;}
   header p{color:var(--text-dim); margin-top:10px; font-size:13px;}
+  .data-mode-bar{
+    max-width:1080px;
+    margin:16px auto 0;
+    padding:0 32px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  #dataModeLabel{
+    font-size:11.5px;
+    color:var(--text-dim);
+    letter-spacing:0.02em;
+  }
+  #dataModeLabel.is-mock{color:var(--grain);}
+  .mode-toggle-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    padding:7px 14px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--text-dim);
+    cursor:pointer;
+  }
+  .mode-toggle-btn:hover{border-color:var(--text-dim); color:var(--text);}
+  .mode-toggle-btn.active{background:var(--grain-dim); color:var(--grain); border-color:var(--grain-dim);}
   main{max-width:1080px; margin:0 auto; padding:0 32px;}
   section{margin-top:0;}
   section:first-of-type{margin-top:40px;}
@@ -306,6 +334,11 @@
   <p>Producción de pollo vivo · costos, peso y mortalidad por lote · 5 núcleos, 20 galpones</p>
 </header>
 
+<div class="data-mode-bar">
+  <span id="dataModeLabel">Mostrando datos reales</span>
+  <button id="toggleMockBtn" class="mode-toggle-btn" type="button">Ver con datos de ejemplo</button>
+</div>
+
 <main>
 
   <section id="kpi-section">
@@ -483,7 +516,16 @@ function baseOptions(yTickFormat){
   };
 }
 
+const MOCK_DATA = {"nucleos": [{"key": "n1", "label": "Núcleo 1", "galpones": 4, "galpones_activos": 3, "lotes_activos": 3, "pollos_vivos": 14200}, {"key": "n2", "label": "Núcleo 2", "galpones": 4, "galpones_activos": 2, "lotes_activos": 2, "pollos_vivos": 9600}, {"key": "n3", "label": "Núcleo 3", "galpones": 4, "galpones_activos": 4, "lotes_activos": 4, "pollos_vivos": 19400}, {"key": "n4", "label": "Núcleo 4", "galpones": 4, "galpones_activos": 1, "lotes_activos": 1, "pollos_vivos": 4850}, {"key": "n5", "label": "Núcleo 5", "galpones": 4, "galpones_activos": 3, "lotes_activos": 3, "pollos_vivos": 13100}], "lotes_activos": [{"lote": "L-2026-14", "galpon": "Galpón 3", "nucleo": "Núcleo 1", "dias": [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34], "peso": [0.044, 0.084, 0.12, 0.148, 0.196, 0.257, 0.333, 0.382, 0.508, 0.606, 0.74, 0.849, 0.903, 1.047, 1.154, 1.38, 1.523, 1.583], "mortalidad": [0.22, 0.34, 0.51, 0.68, 0.83, 0.9, 1.33, 1.33, 1.83, 1.83, 1.83, 2.08, 2.09, 2.74, 2.74, 2.74, 2.74, 2.81]}, {"lote": "L-2026-15", "galpon": "Galpón 1", "nucleo": "Núcleo 3", "dias": [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28], "peso": [0.046, 0.08, 0.119, 0.162, 0.201, 0.272, 0.345, 0.423, 0.495, 0.575, 0.661, 0.84, 0.985, 1.097, 1.212], "mortalidad": [0.24, 0.4, 0.5, 0.72, 0.86, 1.14, 1.14, 1.24, 1.74, 1.82, 2.15, 2.27, 2.27, 2.58, 2.62]}, {"lote": "L-2026-16", "galpon": "Galpón 7", "nucleo": "Núcleo 5", "dias": [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20], "peso": [0.047, 0.082, 0.113, 0.159, 0.215, 0.268, 0.316, 0.384, 0.474, 0.573, 0.691], "mortalidad": [0.28, 0.41, 0.57, 0.78, 0.79, 1.08, 1.2, 1.24, 1.74, 1.74, 2.27]}, {"lote": "L-2026-17", "galpon": "Galpón 12", "nucleo": "Núcleo 3", "dias": [0, 2, 4, 6], "peso": [0.043, 0.083, 0.124, 0.152], "mortalidad": [0.25, 0.44, 0.59, 0.66]}], "lotes_cerrados": [{"nucleo": "Núcleo 1", "galpon": "Galpón 2", "lote": "L-2026-05", "fecha_venta": "2026-05-18", "mortalidad": 0.038, "costo_pollo": 8.62, "precio_venta": 9.4, "ganancia": 31200}, {"nucleo": "Núcleo 4", "galpon": "Galpón 9", "lote": "L-2026-06", "fecha_venta": "2026-05-26", "mortalidad": 0.051, "costo_pollo": 9.1, "precio_venta": 9.35, "ganancia": 18400}, {"nucleo": "Núcleo 2", "galpon": "Galpón 4", "lote": "L-2026-07", "fecha_venta": "2026-06-02", "mortalidad": 0.033, "costo_pollo": 8.4, "precio_venta": 9.5, "ganancia": 35800}, {"nucleo": "Núcleo 5", "galpon": "Galpón 15", "lote": "L-2026-08", "fecha_venta": "2026-06-09", "mortalidad": 0.062, "costo_pollo": 10.15, "precio_venta": 9.2, "ganancia": -6400}, {"nucleo": "Núcleo 3", "galpon": "Galpón 6", "lote": "L-2026-09", "fecha_venta": "2026-06-16", "mortalidad": 0.029, "costo_pollo": 8.21, "precio_venta": 9.55, "ganancia": 41200}, {"nucleo": "Núcleo 1", "galpon": "Galpón 1", "lote": "L-2026-10", "fecha_venta": "2026-06-23", "mortalidad": 0.041, "costo_pollo": 8.77, "precio_venta": 9.45, "ganancia": 27900}, {"nucleo": "Núcleo 3", "galpon": "Galpón 11", "lote": "L-2026-11", "fecha_venta": "2026-06-30", "mortalidad": 0.058, "costo_pollo": 9.85, "precio_venta": 9.3, "ganancia": -2100}, {"nucleo": "Núcleo 4", "galpon": "Galpón 8", "lote": "L-2026-12", "fecha_venta": "2026-07-07", "mortalidad": 0.047, "costo_pollo": 9.02, "precio_venta": 9.4, "ganancia": 19700}], "rangos_esperados": [{"dia": 0, "peso_min": 0.04, "peso_max": 0.05, "mort_min": 0.0, "mort_max": 0.005}, {"dia": 1, "peso_min": 0.056, "peso_max": 0.071, "mort_min": 0.0007, "mort_max": 0.0057}, {"dia": 2, "peso_min": 0.071, "peso_max": 0.093, "mort_min": 0.0014, "mort_max": 0.0064}, {"dia": 3, "peso_min": 0.087, "peso_max": 0.114, "mort_min": 0.0021, "mort_max": 0.0071}, {"dia": 4, "peso_min": 0.103, "peso_max": 0.136, "mort_min": 0.0029, "mort_max": 0.0079}, {"dia": 5, "peso_min": 0.119, "peso_max": 0.157, "mort_min": 0.0036, "mort_max": 0.0086}, {"dia": 6, "peso_min": 0.134, "peso_max": 0.179, "mort_min": 0.0043, "mort_max": 0.0093}, {"dia": 7, "peso_min": 0.15, "peso_max": 0.2, "mort_min": 0.005, "mort_max": 0.01}, {"dia": 8, "peso_min": 0.179, "peso_max": 0.236, "mort_min": 0.0057, "mort_max": 0.0111}, {"dia": 9, "peso_min": 0.207, "peso_max": 0.271, "mort_min": 0.0064, "mort_max": 0.0123}, {"dia": 10, "peso_min": 0.236, "peso_max": 0.307, "mort_min": 0.0071, "mort_max": 0.0134}, {"dia": 11, "peso_min": 0.264, "peso_max": 0.343, "mort_min": 0.0079, "mort_max": 0.0146}, {"dia": 12, "peso_min": 0.293, "peso_max": 0.379, "mort_min": 0.0086, "mort_max": 0.0157}, {"dia": 13, "peso_min": 0.321, "peso_max": 0.414, "mort_min": 0.0093, "mort_max": 0.0169}, {"dia": 14, "peso_min": 0.35, "peso_max": 0.45, "mort_min": 0.01, "mort_max": 0.018}, {"dia": 15, "peso_min": 0.393, "peso_max": 0.507, "mort_min": 0.0111, "mort_max": 0.019}, {"dia": 16, "peso_min": 0.436, "peso_max": 0.564, "mort_min": 0.0123, "mort_max": 0.02}, {"dia": 17, "peso_min": 0.479, "peso_max": 0.621, "mort_min": 0.0134, "mort_max": 0.021}, {"dia": 18, "peso_min": 0.521, "peso_max": 0.679, "mort_min": 0.0146, "mort_max": 0.022}, {"dia": 19, "peso_min": 0.564, "peso_max": 0.736, "mort_min": 0.0157, "mort_max": 0.023}, {"dia": 20, "peso_min": 0.607, "peso_max": 0.793, "mort_min": 0.0169, "mort_max": 0.024}, {"dia": 21, "peso_min": 0.65, "peso_max": 0.85, "mort_min": 0.018, "mort_max": 0.025}, {"dia": 22, "peso_min": 0.707, "peso_max": 0.921, "mort_min": 0.0187, "mort_max": 0.0257}, {"dia": 23, "peso_min": 0.764, "peso_max": 0.993, "mort_min": 0.0194, "mort_max": 0.0264}, {"dia": 24, "peso_min": 0.821, "peso_max": 1.064, "mort_min": 0.0201, "mort_max": 0.0271}, {"dia": 25, "peso_min": 0.879, "peso_max": 1.136, "mort_min": 0.0209, "mort_max": 0.0279}, {"dia": 26, "peso_min": 0.936, "peso_max": 1.207, "mort_min": 0.0216, "mort_max": 0.0286}, {"dia": 27, "peso_min": 0.993, "peso_max": 1.279, "mort_min": 0.0223, "mort_max": 0.0293}, {"dia": 28, "peso_min": 1.05, "peso_max": 1.35, "mort_min": 0.023, "mort_max": 0.03}, {"dia": 29, "peso_min": 1.121, "peso_max": 1.436, "mort_min": 0.0237, "mort_max": 0.0307}, {"dia": 30, "peso_min": 1.193, "peso_max": 1.521, "mort_min": 0.0244, "mort_max": 0.0314}, {"dia": 31, "peso_min": 1.264, "peso_max": 1.607, "mort_min": 0.0251, "mort_max": 0.0321}, {"dia": 32, "peso_min": 1.336, "peso_max": 1.693, "mort_min": 0.0259, "mort_max": 0.0329}, {"dia": 33, "peso_min": 1.407, "peso_max": 1.779, "mort_min": 0.0266, "mort_max": 0.0336}, {"dia": 34, "peso_min": 1.479, "peso_max": 1.864, "mort_min": 0.0273, "mort_max": 0.0343}, {"dia": 35, "peso_min": 1.55, "peso_max": 1.95, "mort_min": 0.028, "mort_max": 0.035}, {"dia": 36, "peso_min": 1.621, "peso_max": 2.021, "mort_min": 0.0286, "mort_max": 0.0357}, {"dia": 37, "peso_min": 1.693, "peso_max": 2.093, "mort_min": 0.0291, "mort_max": 0.0364}, {"dia": 38, "peso_min": 1.764, "peso_max": 2.164, "mort_min": 0.0297, "mort_max": 0.0371}, {"dia": 39, "peso_min": 1.836, "peso_max": 2.236, "mort_min": 0.0303, "mort_max": 0.0379}, {"dia": 40, "peso_min": 1.907, "peso_max": 2.307, "mort_min": 0.0309, "mort_max": 0.0386}, {"dia": 41, "peso_min": 1.979, "peso_max": 2.379, "mort_min": 0.0314, "mort_max": 0.0393}, {"dia": 42, "peso_min": 2.05, "peso_max": 2.45, "mort_min": 0.032, "mort_max": 0.04}, {"dia": 43, "peso_min": 2.107, "peso_max": 2.507, "mort_min": 0.0326, "mort_max": 0.0407}, {"dia": 44, "peso_min": 2.164, "peso_max": 2.564, "mort_min": 0.0331, "mort_max": 0.0414}, {"dia": 45, "peso_min": 2.221, "peso_max": 2.621, "mort_min": 0.0337, "mort_max": 0.0421}, {"dia": 46, "peso_min": 2.279, "peso_max": 2.679, "mort_min": 0.0343, "mort_max": 0.0429}, {"dia": 47, "peso_min": 2.336, "peso_max": 2.736, "mort_min": 0.0349, "mort_max": 0.0436}, {"dia": 48, "peso_min": 2.393, "peso_max": 2.793, "mort_min": 0.0354, "mort_max": 0.0443}, {"dia": 49, "peso_min": 2.45, "peso_max": 2.85, "mort_min": 0.036, "mort_max": 0.045}]};
+
 const LOTE_COLORS = ['#D9A441', '#7FB88A', '#C97A6B', '#B98CA3', '#E2A93A', '#6FA0A8'];
+
+// Chart.js needs the previous instance destroyed before a canvas can be
+// reused — tracked here so switching between real/mock data doesn't error.
+const chartInstances = { peso: null, mort: null, costo: null, ganancia: null };
+function destroyChart(key){
+  if (chartInstances[key]) { chartInstances[key].destroy(); chartInstances[key] = null; }
+}
 
 // ---- KPI cards ------------------------------------------------------------
 function renderKPIs(data){
@@ -530,6 +572,8 @@ function renderActivosCharts(data){
   const hasData = activos.length > 0;
   toggleEmpty('pesoEmpty', 'pesoChart', hasData);
   toggleEmpty('mortEmpty', 'mortChart', hasData);
+  destroyChart('peso');
+  destroyChart('mort');
   if (!hasData) {
     document.getElementById('pesoFilters').innerHTML = '';
     document.getElementById('mortFilters').innerHTML = '';
@@ -565,6 +609,7 @@ function renderActivosCharts(data){
     data:{labels, datasets:[...pesoBandDatasets, ...pesoDatasets]},
     options: baseOptions(v => v + ' kg'),
   });
+  chartInstances.peso = pesoChart;
   renderFilterChips('pesoFilters', () => pesoChart, pesoDatasets);
 
   // ---- mortalidad ----
@@ -589,6 +634,7 @@ function renderActivosCharts(data){
     data:{labels, datasets:[...mortBandDatasets, ...mortDatasets]},
     options: baseOptions(v => v + '%'),
   });
+  chartInstances.mort = mortChart;
   renderFilterChips('mortFilters', () => mortChart, mortDatasets);
 }
 
@@ -600,6 +646,8 @@ function renderCerradosCharts(data){
   toggleEmpty('gananciaEmpty', 'gananciaChart', hasData);
   toggleEmpty('loteCardsEmpty', null, hasData);
   document.getElementById('loteCardsGrid').innerHTML = '';
+  destroyChart('costo');
+  destroyChart('ganancia');
   if (!hasData) return;
 
   const labels = cerrados.map(l => l.lote);
@@ -607,7 +655,7 @@ function renderCerradosCharts(data){
   const ventaValues = cerrados.map(l => l.precio_venta);
   const gananciaValues = cerrados.map(l => l.ganancia);
 
-  new Chart(document.getElementById('costoChart'), {
+  const costoChart = new Chart(document.getElementById('costoChart'), {
     type:'bar',
     data:{
       labels,
@@ -640,11 +688,12 @@ function renderCerradosCharts(data){
       plugins:{ legend:{ labels:{ color:'#F2E6E1', font:{family:'JetBrains Mono', size:11}, boxWidth:12 } } },
     },
   });
+  chartInstances.costo = costoChart;
 
   const gananciaAbsMax = Math.max(...gananciaValues.map(v => Math.abs(v)), 1);
   const gananciaAxisPad = gananciaAbsMax * 0.15;
 
-  new Chart(document.getElementById('gananciaChart'), {
+  const gananciaChart = new Chart(document.getElementById('gananciaChart'), {
     type:'bar',
     data:{
       labels,
@@ -682,6 +731,7 @@ function renderCerradosCharts(data){
       plugins:{ legend:{ display:false } },
     },
   });
+  chartInstances.ganancia = gananciaChart;
 
   const loteCardsGrid = document.getElementById('loteCardsGrid');
   cerrados.slice(-6).reverse().forEach(l => {
@@ -708,13 +758,41 @@ function renderCerradosCharts(data){
 }
 
 // ---- init ---------------------------------------------------------------
+let realData = null;
+let usingMock = false;
+
+function renderAll(data){
+  renderKPIs(data);
+  renderNucleos(data);
+  renderActivosCharts(data);
+  renderCerradosCharts(data);
+}
+
+function setMockMode(on){
+  usingMock = on;
+  const label = document.getElementById('dataModeLabel');
+  const btn = document.getElementById('toggleMockBtn');
+  if (on) {
+    label.textContent = 'Mostrando datos de ejemplo';
+    label.classList.add('is-mock');
+    btn.textContent = 'Volver a datos reales';
+    btn.classList.add('active');
+    renderAll(MOCK_DATA);
+  } else {
+    label.textContent = 'Mostrando datos reales';
+    label.classList.remove('is-mock');
+    btn.textContent = 'Ver con datos de ejemplo';
+    btn.classList.remove('active');
+    renderAll(realData);
+  }
+}
+
+document.getElementById('toggleMockBtn').addEventListener('click', () => setMockMode(!usingMock));
+
 async function init(){
   const data = await loadHistory();
-  const safeData = data || {nucleos: [], lotes_activos: [], lotes_cerrados: [], rangos_esperados: []};
-  renderKPIs(safeData);
-  renderNucleos(safeData);
-  renderActivosCharts(safeData);
-  renderCerradosCharts(safeData);
+  realData = data || {nucleos: [], lotes_activos: [], lotes_cerrados: [], rangos_esperados: []};
+  renderAll(realData);
 }
 init();
 </script>

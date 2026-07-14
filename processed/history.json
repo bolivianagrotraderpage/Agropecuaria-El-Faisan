@@ -1,0 +1,48 @@
+{
+  "generated_at": "2026-07-14T06:22:42.244778Z",
+  "nucleos": [
+    {
+      "key": "n1",
+      "label": "Núcleo 1",
+      "galpones": 4,
+      "galpones_activos": 0,
+      "lotes_activos": 0,
+      "pollos_vivos": 0
+    },
+    {
+      "key": "n2",
+      "label": "Núcleo 2",
+      "galpones": 4,
+      "galpones_activos": 0,
+      "lotes_activos": 0,
+      "pollos_vivos": 0
+    },
+    {
+      "key": "n3",
+      "label": "Núcleo 3",
+      "galpones": 4,
+      "galpones_activos": 0,
+      "lotes_activos": 0,
+      "pollos_vivos": 0
+    },
+    {
+      "key": "n4",
+      "label": "Núcleo 4",
+      "galpones": 4,
+      "galpones_activos": 0,
+      "lotes_activos": 0,
+      "pollos_vivos": 0
+    },
+    {
+      "key": "n5",
+      "label": "Núcleo 5",
+      "galpones": 4,
+      "galpones_activos": 0,
+      "lotes_activos": 0,
+      "pollos_vivos": 0
+    }
+  ],
+  "lotes_activos": [],
+  "lotes_cerrados": [],
+  "rangos_esperados": []
+}
